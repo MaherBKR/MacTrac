@@ -1,0 +1,127 @@
+[
+  {
+    "name": "Whole Egg",
+    "kcalPer100g": 143.0,
+    "proteinPer100g": 12.6,
+    "carbsPer100g": 0.7,
+    "fatPer100g": 9.5,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Large Egg", "gramEquivalent": 50.0 },
+      { "unitName": "Medium Egg", "gramEquivalent": 44.0 },
+      { "unitName": "Gram", "gramEquivalent": 1.0 }
+    ]
+  },
+  {
+    "name": "Chicken Breast (Raw)",
+    "kcalPer100g": 120.0,
+    "proteinPer100g": 22.5,
+    "carbsPer100g": 0.0,
+    "fatPer100g": 2.6,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Gram", "gramEquivalent": 1.0 },
+      { "unitName": "Medium Breast", "gramEquivalent": 170.0 }
+    ]
+  },
+  {
+    "name": "White Rice (Uncooked)",
+    "kcalPer100g": 365.0,
+    "proteinPer100g": 7.1,
+    "carbsPer100g": 80.0,
+    "fatPer100g": 0.7,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Gram", "gramEquivalent": 1.0 },
+      { "unitName": "Cup (Dry)", "gramEquivalent": 185.0 }
+    ]
+  },
+  {
+    "name": "Rolled Oats",
+    "kcalPer100g": 389.0,
+    "proteinPer100g": 16.9,
+    "carbsPer100g": 66.3,
+    "fatPer100g": 6.9,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Gram", "gramEquivalent": 1.0 },
+      { "unitName": "1/2 Cup", "gramEquivalent": 40.0 },
+      { "unitName": "Tablespoon", "gramEquivalent": 10.0 }
+    ]
+  },
+  {
+    "name": "Whey Protein Powder",
+    "kcalPer100g": 400.0,
+    "proteinPer100g": 80.0,
+    "carbsPer100g": 7.0,
+    "fatPer100g": 5.0,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Scoop", "gramEquivalent": 30.0 },
+      { "unitName": "Gram", "gramEquivalent": 1.0 }
+    ]
+  },
+  {
+    "name": "Greek Yogurt (0% Fat)",
+    "kcalPer100g": 59.0,
+    "proteinPer100g": 10.2,
+    "carbsPer100g": 3.6,
+    "fatPer100g": 0.4,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Gram", "gramEquivalent": 1.0 },
+      { "unitName": "Cup", "gramEquivalent": 245.0 },
+      { "unitName": "Tablespoon", "gramEquivalent": 15.0 }
+    ]
+  },
+  {
+    "name": "Banana",
+    "kcalPer100g": 89.0,
+    "proteinPer100g": 1.1,
+    "carbsPer100g": 22.8,
+    "fatPer100g": 0.3,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Medium Banana", "gramEquivalent": 118.0 },
+      { "unitName": "Large Banana", "gramEquivalent": 136.0 },
+      { "unitName": "Gram", "gramEquivalent": 1.0 }
+    ]
+  },
+  {
+    "name": "Extra Virgin Olive Oil",
+    "kcalPer100g": 884.0,
+    "proteinPer100g": 0.0,
+    "carbsPer100g": 0.0,
+    "fatPer100g": 100.0,
+    "defaultBaseUnit": "ml",
+    "units": [
+      { "unitName": "Tablespoon", "gramEquivalent": 13.5 },
+      { "unitName": "Teaspoon", "gramEquivalent": 4.5 },
+      { "unitName": "ml", "gramEquivalent": 1.0 }
+    ]
+  },
+  {
+    "name": "Peanut Butter (Natural)",
+    "kcalPer100g": 588.0,
+    "proteinPer100g": 25.0,
+    "carbsPer100g": 20.0,
+    "fatPer100g": 50.0,
+    "defaultBaseUnit": "g",
+    "units": [
+      { "unitName": "Tablespoon", "gramEquivalent": 16.0 },
+      { "unitName": "Gram", "gramEquivalent": 1.0 }
+    ]
+  },
+  {
+    "name": "Whole Milk",
+    "kcalPer100g": 61.0,
+    "proteinPer100g": 3.2,
+    "carbsPer100g": 4.8,
+    "fatPer100g": 3.3,
+    "defaultBaseUnit": "ml",
+    "units": [
+      { "unitName": "Cup", "gramEquivalent": 240.0 },
+      { "unitName": "ml", "gramEquivalent": 1.0 }
+    ]
+  }
+]
