@@ -287,7 +287,7 @@ private fun MacroDashboardCard(
             ) {
                 Column {
                     Text(
-                        text = "${totalKcal.roundToInt()} /$targetKcal kcal",
+                        text = "${totalKcal.roundToInt()} / $targetKcal kcal",
                         style = MaterialTheme.typography.headlineSmall,
                         color = MacroColors.TextPrimary
                     )
@@ -501,7 +501,7 @@ private fun MealSlotCard(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${formatQty(log.quantityLogged)}${log.unitNameSnapshot} (${log.computedGrams.roundToInt()}g)  •  P ${log.cachedProtein.roundToInt()}  C ${log.cachedCarbs.roundToInt()}  F${log.cachedFat.roundToInt()}",
+                                text = "${formatQty(log.quantityLogged)} ${log.unitNameSnapshot} (${log.computedGrams.roundToInt()}g)  •  P ${log.cachedProtein.roundToInt()}  C ${log.cachedCarbs.roundToInt()}  F ${log.cachedFat.roundToInt()}",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MacroColors.TextSecondary
                             )
@@ -560,4 +560,323 @@ private fun QuickLogBottomSheet(
             .take(8)
     }
 
-    val foodsMap = remember(allFoods) {
+    val foodsMap = remember(allFoods) { allFoods.associateBy { it.food.id } }
+    val recipesMap = remember(allRecipes) { allRecipes.associateBy { it.recipe.id } }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MacroColors.CardSurface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Quick Log to $mealSlot",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MacroColors.TextPrimary
+                )
+                IconButton(onClick = onOpenBarcodeScanner) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = "Scan Barcode",
+                        tint = MacroColors.ProteinTeal
+                    )
+                }
+            }
+
+            // Recent / Frequent 1-Tap Chips (2-Tap total from Today screen)
+            if (distinctRecents.isNotEmpty() && selectedFood == null && selectedRecipe == null) {
+                Text(
+                    text = "Recent (1-Tap Log)",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MacroColors.TextSecondary
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(distinctRecents) { recent ->
+                        AssistChip(
+                            onClick = { onQuickReLog(recent) },
+                            label = {
+                                Text(
+                                    "${recent.itemNameSnapshot} • ${formatQty(recent.quantityLogged)} ${recent.unitNameSnapshot}",
+                                    maxLines = 1
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+
+            if (selectedFood != null) {
+                val foodWithUnits = selectedFood!!
+                val units = foodWithUnits.units.ifEmpty {
+                    listOf(
+                        FoodUnit(
+                            id = 0L,
+                            foodItemId = foodWithUnits.food.id,
+                            unitName = foodWithUnits.food.defaultBaseUnit,
+                            gramEquivalent = 1.0
+                        )
+                    )
+                }
+                val safeUnitIndex = selectedUnitIndex.coerceIn(0, units.lastIndex)
+                val chosenUnit = units[safeUnitIndex]
+                val qty = quantityText.toDoubleOrNull() ?: 0.0
+                val preview = NutritionCalculator.calculateFoodMacros(foodWithUnits.food, chosenUnit, qty)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = foodWithUnits.food.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MacroColors.TextPrimary
+                    )
+                    TextButton(onClick = { selectedFood = null }) {
+                        Text("Change")
+                    }
+                }
+
+                // Horizontal Material 3 Segmented Buttons for Equivalent Units
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                    SingleChoiceSegmentedButtonRow {
+                        units.forEachIndexed { index, unit ->
+                            SegmentedButton(
+                                selected = index == safeUnitIndex,
+                                onClick = {
+                                    selectedUnitIndex = index
+                                    quantityText = if (unit.gramEquivalent == 1.0) "100" else "1"
+                                },
+                                shape = SegmentedButtonDefaults.itemShape(index = index, count = units.size),
+                                label = { Text("${unit.unitName} (${formatQty(unit.gramEquivalent)}g)") }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = { quantityText = it },
+                    label = { Text("Quantity (${chosenUnit.unitName})") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                LiveMacroPreviewBar(preview)
+
+                Button(
+                    onClick = { onLogFood(foodWithUnits, chosenUnit, qty) },
+                    enabled = qty > 0.0,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save to $mealSlot")
+                }
+            } else if (selectedRecipe != null) {
+                val recipeItem = selectedRecipe!!
+                val qty = quantityText.toDoubleOrNull() ?: 0.0
+                val preview = NutritionCalculator.calculateRecipePortionMacros(
+                    recipeId = recipeItem.recipe.id,
+                    unitMode = selectedRecipeUnitMode,
+                    quantity = qty,
+                    allFoods = foodsMap,
+                    allRecipes = recipesMap
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${recipeItem.recipe.name} (Recipe)",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MacroColors.TextPrimary
+                    )
+                    TextButton(onClick = { selectedRecipe = null }) {
+                        Text("Change")
+                    }
+                }
+
+                val modes = listOf("SERVING" to "Servings", "GRAMS" to "Grams (Scale)")
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    modes.forEachIndexed { index, (modeKey, label) ->
+                        SegmentedButton(
+                            selected = selectedRecipeUnitMode == modeKey,
+                            onClick = {
+                                selectedRecipeUnitMode = modeKey
+                                quantityText = if (modeKey == "GRAMS") "200" else "1"
+                            },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                            label = { Text(label) }
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = quantityText,
+                    onValueChange = { quantityText = it },
+                    label = {
+                        Text(if (selectedRecipeUnitMode == "GRAMS") "Weight (g)" else "Servings")
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                LiveMacroPreviewBar(preview)
+
+                Button(
+                    onClick = { onLogRecipe(recipeItem.recipe.id, selectedRecipeUnitMode, qty) },
+                    enabled = qty > 0.0,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Recipe to $mealSlot")
+                }
+            } else {
+                // Search Foods & Recipes
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search foods or recipes...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                val filteredFoods = remember(allFoods, searchQuery) {
+                    if (searchQuery.isBlank()) allFoods
+                    else allFoods.filter {
+                        it.food.name.contains(searchQuery, ignoreCase = true) ||
+                            (it.food.brand?.contains(searchQuery, ignoreCase = true) == true)
+                    }
+                }
+                val filteredRecipes = remember(allRecipes, searchQuery) {
+                    if (searchQuery.isBlank()) allRecipes
+                    else allRecipes.filter { it.recipe.name.contains(searchQuery, ignoreCase = true) }
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    if (filteredRecipes.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "Recipes",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MacroColors.CarbsAmber
+                            )
+                        }
+                        items(filteredRecipes, key = { "r_${it.recipe.id}" }) { r ->
+                            val perServing = NutritionCalculator.calculateRecipePortionMacros(
+                                r.recipe.id, "SERVING", 1.0, foodsMap, recipesMap
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(MacroColors.CardSurfaceElevated)
+                                    .clickable {
+                                        selectedRecipe = r
+                                        selectedRecipeUnitMode = "SERVING"
+                                        quantityText = "1"
+                                    }
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(r.recipe.name, color = MacroColors.TextPrimary)
+                                Text(
+                                    "${perServing.kcal.roundToInt()} kcal / srv",
+                                    color = MacroColors.TextSecondary
+                                )
+                            }
+                        }
+                    }
+
+                    item {
+                        Text(
+                            text = "Foods",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MacroColors.ProteinTeal,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    items(filteredFoods, key = { "f_${it.food.id}" }) { f ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MacroColors.CardSurfaceElevated)
+                                .clickable {
+                                    selectedFood = f
+                                    selectedUnitIndex = 0
+                                    val firstUnit = f.units.firstOrNull()
+                                    quantityText = if (firstUnit == null || firstUnit.gramEquivalent == 1.0) "100" else "1"
+                                }
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(f.food.name, color = MacroColors.TextPrimary)
+                                Text(
+                                    "${f.food.kcalPer100g.roundToInt()} kcal • P ${f.food.proteinPer100g.roundToInt()}g per 100${f.food.defaultBaseUnit}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MacroColors.TextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LiveMacroPreviewBar(macros: MacroBreakdown) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MacroColors.CardSurfaceElevated),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            PreviewStat("${macros.kcal.roundToInt()}", "kcal", MacroColors.TextPrimary)
+            PreviewStat("${macros.protein.roundToInt()}g", "Protein", MacroColors.ProteinTeal)
+            PreviewStat("${macros.carbs.roundToInt()}g", "Carbs", MacroColors.CarbsAmber)
+            PreviewStat("${macros.fat.roundToInt()}g", "Fat", MacroColors.FatCoral)
+            PreviewStat("${macros.grams.roundToInt()}g", "Weight", MacroColors.TextSecondary)
+        }
+    }
+}
+
+@Composable
+private fun PreviewStat(value: String, label: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontWeight = FontWeight.Bold, color = color)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MacroColors.TextSecondary)
+    }
+}
+
+private fun formatQty(value: Double): String {
+    return if (value % 1.0 == 0.0) value.roundToInt().toString()
+    else "%.1f".format(value)
+}
